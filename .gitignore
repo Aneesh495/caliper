@@ -1,0 +1,51 @@
+# Build artifacts and compiled objects
+_build/
+build/
+bin/
+obj/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Futhark generated files
+*.c.tmp
+*.h.tmp
+*.actual
+*.expected
+*.manifest
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+
+# OS and Editor metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Large generated data files
+data/scans/*.bin
+data/reports/*.html
