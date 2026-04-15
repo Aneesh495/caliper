@@ -180,6 +180,10 @@ class PointCloud:
                     line.extend([str(r), str(g), str(b)])
                 f.write(" ".join(line) + "\n")
 
+    def to_ply(self, filepath: str) -> None:
+        self.save_ply(str(filepath))
+
+
     @classmethod
     def load_ply(cls, filepath: str) -> 'PointCloud':
         """Loads point cloud from ASCII PLY format."""
@@ -231,10 +235,47 @@ class PointCloud:
 
 
 class TriangleMesh:
-    def __init__(self, triangles: List[Tuple[Tuple[float, float, float],
-                                            Tuple[float, float, float],
-                                            Tuple[float, float, float]]]):
-        self.triangles = list(triangles)
+    def __init__(self,
+                 triangles: Optional[List[Any]] = None,
+                 vertices: Optional[List[Tuple[float, float, float]]] = None):
+        triangles = triangles or []
+        self._raw_triangles = triangles
+        self._vertices = list(vertices) if vertices is not None else []
+
+        if vertices is not None:
+            # Triangles are index triples
+            self._indices = [tuple(t) for t in triangles]
+            self.triangles = [
+                (self._vertices[i], self._vertices[j], self._vertices[k])
+                for i, j, k in self._indices
+            ]
+        else:
+            # Triangles are 3-tuples of vertices
+            self.triangles = list(triangles)
+            v_set = []
+            for t in self.triangles:
+                for v in t:
+                    v_set.append(v)
+            self._vertices = v_set
+            self._indices = []
+
+    @property
+    def vertices(self) -> List[Tuple[float, float, float]]:
+        return self._vertices
+
+    @property
+    def triangle_indices(self) -> List[Tuple[int, int, int]]:
+        if self._indices:
+            return self._indices
+        return [(3 * i, 3 * i + 1, 3 * i + 2) for i in range(len(self.triangles))]
+
+
+    def to_stl(self, filepath: str) -> None:
+        self.save_stl_binary(str(filepath))
+
+    def save_stl(self, filepath: str) -> None:
+        self.save_stl_binary(str(filepath))
+
 
     def __len__(self) -> int:
         return len(self.triangles)

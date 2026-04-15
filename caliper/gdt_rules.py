@@ -29,6 +29,19 @@ class GdtFinding:
     datum_reference: Optional[str] = None
     notes: str = ""
 
+    @property
+    def characteristic(self) -> str:
+        return self.tolerance_type
+
+    @property
+    def tolerance_limit(self) -> float:
+        return self.specified_tolerance
+
+    @property
+    def details(self) -> str:
+        return self.notes
+
+
 @dataclass
 class FlatnessCheck:
     feature_name: str
@@ -150,11 +163,17 @@ class TruePositionCheck:
             notes=self.notes
         )
 
+@dataclass
+class ToleranceBand:
+    upper_tol: float
+    lower_tol: float
+
+
 class GdtSpecification:
     """
     Container for complete engineering GD&T inspection schema.
     """
-    def __init__(self, part_name: str, drawing_number: str = "DWG-001"):
+    def __init__(self, part_name: str = "PART-001", drawing_number: str = "DWG-001"):
         self.part_name = part_name
         self.drawing_number = drawing_number
         self.flatness_checks: List[FlatnessCheck] = []
@@ -162,13 +181,19 @@ class GdtSpecification:
         self.perpendicularity_checks: List[PerpendicularityCheck] = []
         self.position_checks: List[TruePositionCheck] = []
 
-    def add_flatness(self, feature_name: str, tolerance_mm: float, notes: str = "") -> 'GdtSpecification':
-        self.flatness_checks.append(FlatnessCheck(feature_name, tolerance_mm, notes))
+    def build(self) -> 'GdtSpecification':
         return self
 
-    def add_cylindricity(self, feature_name: str, tolerance_mm: float, notes: str = "") -> 'GdtSpecification':
-        self.cylindricity_checks.append(CylindricityCheck(feature_name, tolerance_mm, notes=notes))
+    def add_flatness(self, feature_name: str, tolerance_mm: float = 0.05, tolerance: Optional[float] = None, notes: str = "", region_filter: Any = None) -> 'GdtSpecification':
+        tol = tolerance if tolerance is not None else tolerance_mm
+        self.flatness_checks.append(FlatnessCheck(feature_name, tol, notes))
         return self
+
+    def add_cylindricity(self, feature_name: str, tolerance_mm: float = 0.05, tolerance: Optional[float] = None, notes: str = "", region_filter: Any = None) -> 'GdtSpecification':
+        tol = tolerance if tolerance is not None else tolerance_mm
+        self.cylindricity_checks.append(CylindricityCheck(feature_name, tol, notes=notes))
+        return self
+
 
     def add_perpendicularity(self, feature_name: str, datum: str, length_mm: float, tolerance_mm: float, notes: str = "") -> 'GdtSpecification':
         self.perpendicularity_checks.append(PerpendicularityCheck(feature_name, datum, length_mm, tolerance_mm, notes))
@@ -207,3 +232,8 @@ class GdtReport:
     @property
     def fail_count(self) -> int:
         return sum(1 for f in self.findings if not f.passed)
+
+
+# Convenient alias
+GDTSpecificationBuilder = GdtSpecification
+

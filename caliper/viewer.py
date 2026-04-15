@@ -58,7 +58,7 @@ def generate_html_viewer(
     if result.nominal_mesh is not None:
         for v in result.nominal_mesh.vertices:
             mesh_vertices_flat.extend([float(v[0]), float(v[1]), float(v[2])])
-        for tri in result.nominal_mesh.triangles:
+        for tri in result.nominal_mesh.triangle_indices:
             mesh_triangles_flat.extend([int(tri[0]), int(tri[1]), int(tri[2])])
 
     disposition_color = "#10b981" if result.disposition == "PASS" else ("#f59e0b" if result.disposition == "REWORK" else "#ef4444")
@@ -710,3 +710,8 @@ def save_html_viewer(
     html_content = generate_html_viewer(result, title=title, tolerance_band=tolerance_band)
     path.write_text(html_content, encoding="utf-8")
     return path
+
+
+# Convenient alias for top-level export
+generate_inspection_dashboard = generate_html_viewer
+

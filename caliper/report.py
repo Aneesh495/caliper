@@ -303,3 +303,9 @@ def save_svg_cross_section(
     )
     path.write_text(svg, encoding="utf-8")
     return path
+
+
+# Convenient aliases for top-level export
+generate_qc_certificate = generate_markdown_certificate
+export_svg_cross_section = generate_svg_cross_section
+

@@ -292,11 +292,10 @@ def sample_mesh_surface(
     tris = mesh.triangles
 
     for tri in tris:
-        v0 = verts[tri[0]]
-        v1 = verts[tri[1]]
-        v2 = verts[tri[2]]
+        v0, v1, v2 = tri
         e1 = (v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2])
         e2 = (v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2])
+
         cx = e1[1] * e2[2] - e1[2] * e2[1]
         cy = e1[2] * e2[0] - e1[0] * e2[2]
         cz = e1[0] * e2[1] - e1[1] * e2[0]
@@ -327,9 +326,8 @@ def sample_mesh_surface(
                 low = mid + 1
 
         tri = tris[idx]
-        v0 = verts[tri[0]]
-        v1 = verts[tri[1]]
-        v2 = verts[tri[2]]
+        v0, v1, v2 = tri
+
 
         u1 = rng.random()
         u2 = rng.random()

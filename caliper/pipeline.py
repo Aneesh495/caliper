@@ -14,6 +14,45 @@ from caliper.gdt_rules import GdtSpecification, GdtReport
 from caliper.core import deviation_to_color_rgb
 
 @dataclass
+class InspectionConfig:
+    tolerance_band: Any = None
+    tolerance_mm: float = 0.050
+    gdt_specification: Optional[GdtSpecification] = None
+    sor_filter_active: bool = True
+    sor_k_neighbors: int = 16
+    sor_std_ratio: float = 2.0
+    estimate_normals: bool = True
+    defect_threshold_mm: float = 0.20
+    defect_min_cluster_points: int = 10
+    cluster_eps_mm: float = 5.0
+    max_allowable_rmse: float = 0.15
+
+    def __post_init__(self):
+        if self.tolerance_band is not None and hasattr(self.tolerance_band, "upper_tol"):
+            self.tolerance_mm = abs(self.tolerance_band.upper_tol)
+
+
+@dataclass
+class DefectInfo:
+    cluster_id: int
+    defect_type: str
+    point_count: int
+    peak_deviation: float
+    bounding_box_min: Tuple[float, float, float]
+    bounding_box_max: Tuple[float, float, float]
+
+
+@dataclass
+class StatisticsInfo:
+    point_count: int
+    rmse: float
+    mean_deviation: float
+    std_deviation: float
+    max_positive: float
+    max_negative: float
+
+
+@dataclass
 class InspectionResult:
     evaluated_points: int
     tolerance_mm: float
@@ -29,16 +68,80 @@ class InspectionResult:
     gdt_report: Optional[GdtReport] = None
     defect_clusters: List[Dict[str, Any]] = field(default_factory=list)
     quality_disposition: str = "PASS"  # PASS, REWORK, SCRAP
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def scanned_points(self) -> PointCloud:
+        return self.scan_pointcloud
+
+    @property
+    def nominal_mesh(self) -> TriangleMesh:
+        return self.cad_mesh
+
+    @property
+    def signed_deviations(self) -> List[float]:
+        return self.scan_pointcloud.deviations or []
+
+    @property
+    def disposition(self) -> str:
+        return self.quality_disposition
+
+    @property
+    def statistics(self) -> StatisticsInfo:
+        return StatisticsInfo(
+            point_count=self.evaluated_points,
+            rmse=self.rmse_mm,
+            mean_deviation=self.mean_deviation_mm,
+            std_deviation=self.std_dev_mm,
+            max_positive=self.max_positive_mm,
+            max_negative=self.max_negative_mm,
+        )
+
+    @property
+    def defects(self) -> List[DefectInfo]:
+        res = []
+        for c in self.defect_clusters:
+            centroid = c.get("centroid", (0.0, 0.0, 0.0))
+            rad = 5.0
+            res.append(DefectInfo(
+                cluster_id=c.get("cluster_id", 1),
+                defect_type=c.get("classification", "Defect"),
+                point_count=c.get("point_count", 0),
+                peak_deviation=c.get("peak_dev", 0.0),
+                bounding_box_min=(centroid[0] - rad, centroid[1] - rad, centroid[2] - rad),
+                bounding_box_max=(centroid[0] + rad, centroid[1] + rad, centroid[2] + rad),
+            ))
+        return res
+
+    @property
+    def gdt_results(self) -> List[Any]:
+        if self.gdt_report is not None:
+            return self.gdt_report.findings
+        return []
+
 
 class InspectionPipeline:
-    def __init__(self, tolerance_mm: float = 0.050, run_sor: bool = True):
-        self.tolerance_mm = tolerance_mm
-        self.run_sor = run_sor
+    def __init__(self, tolerance_mm: float = 0.050, run_sor: bool = True, config: Optional[InspectionConfig] = None):
+        if config is not None:
+            self.config = config
+            self.tolerance_mm = config.tolerance_mm
+            self.run_sor = config.sor_filter_active
+        else:
+            self.config = InspectionConfig(tolerance_mm=tolerance_mm, sor_filter_active=run_sor)
+            self.tolerance_mm = tolerance_mm
+            self.run_sor = run_sor
+
+    def run(self, nominal_mesh: TriangleMesh, scanned_points: PointCloud, metadata: Optional[Dict[str, Any]] = None) -> InspectionResult:
+        res = self.inspect(scanned_points, nominal_mesh, gdt_spec=self.config.gdt_specification)
+        if metadata:
+            res.metadata.update(metadata)
+        return res
 
     def inspect(self,
                 scan: PointCloud,
                 cad: TriangleMesh,
                 gdt_spec: Optional[GdtSpecification] = None) -> InspectionResult:
+
         """
         Executes end-to-end metrology inspection:
         1. Pre-process scan with SOR outlier filter

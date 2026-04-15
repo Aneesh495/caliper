@@ -48,4 +48,6 @@ Thumbs.db
 
 # Large generated data files
 data/scans/*.bin
+artifacts/
+
 data/reports/*.html
