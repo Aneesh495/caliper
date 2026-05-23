@@ -1,0 +1,97 @@
+name: Caliper Continuous Integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-no-em-dash:
+    name: Verify Zero Forbidden Dash Characters
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run dash linter
+        run: |
+          python3 tools/check_no_em_dash.py
+
+  futhark-kernels:
+    name: Type-Check & Validate Futhark Kernels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Futhark
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl tar
+          curl -fSL https://futhark-lang.org/releases/futhark-0.25.15-linux-x86_64.tar.xz | tar -xJ --strip-components=1 -C /usr/local
+
+      - name: Verify Futhark Installation
+        run: futhark --version
+
+      - name: Type-Check All Futhark Modules
+        run: |
+          for f in src/futhark/*.fut; do
+            echo "Checking $f..."
+            futhark check --Werror "$f"
+          done
+
+      - name: Execute Futhark Unit Test Suites
+        run: |
+          mkdir -p _build
+          for t in tests/futhark/test_*.fut; do
+            echo "Testing $t..."
+            futhark c "$t" -o "_build/$(basename $t .fut)"
+            "_build/$(basename $t .fut)" > "_build/$(basename $t .fut).out"
+            grep -q "true" "_build/$(basename $t .fut).out" || (echo "FAIL: $t" && exit 1)
+          done
+
+  c-native:
+    name: Native C Build and Unit Test Matrix
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Compile and Test C Native Bridge
+        run: |
+          make test-c
+
+  python-metrology:
+    name: Python Metrology Test Matrix
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run Python Test Suite
+        run: |
+          python3 -m unittest discover -s tests/python -v
+
+      - name: Run Metrology Scenarios Verification
+        run: |
+          python3 -m caliper.cli scenario --name turbine --points 500
+          python3 -m caliper.cli scenario --name piston --points 500
+          python3 -m caliper.cli scenario --name bracket --points 500
