@@ -62,7 +62,7 @@ test-futhark: $(BUILD_DIR)
 	@for t in $(FUTHARK_TESTS); do \
 		echo "Compiling and running $$t..."; \
 		$(FUTHARK) c $$t -o $(BUILD_DIR)/$$(basename $$t .fut) || exit 1; \
-		$(BUILD_DIR)/$$(basename $$t .fut) > $(BUILD_DIR)/$$(basename $$t .fut).out || exit 1; \
+		$(BUILD_DIR)/$$(basename $$t .fut) </dev/null > $(BUILD_DIR)/$$(basename $$t .fut).out || exit 1; \
 		grep -q "true" $(BUILD_DIR)/$$(basename $$t .fut).out || (echo "FAIL: $$t did not output true" && exit 1); \
 		echo "PASS: $$t"; \
 	done

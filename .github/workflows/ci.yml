@@ -52,7 +52,7 @@ jobs:
           for t in tests/futhark/test_*.fut; do
             echo "Testing $t..."
             futhark c "$t" -o "_build/$(basename $t .fut)"
-            "_build/$(basename $t .fut)" > "_build/$(basename $t .fut).out"
+            "_build/$(basename $t .fut)" </dev/null > "_build/$(basename $t .fut).out"
             grep -q "true" "_build/$(basename $t .fut).out" || (echo "FAIL: $t" && exit 1)
           done
 
