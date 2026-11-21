@@ -34,7 +34,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y curl tar
-          curl -fSL https://futhark-lang.org/releases/futhark-0.25.15-linux-x86_64.tar.xz | tar -xJ --strip-components=1 -C /usr/local
+          install_dir="$RUNNER_TEMP/caliper-futhark"
+          mkdir -p "$install_dir"
+          curl -fSL https://futhark-lang.org/releases/futhark-0.28.2-linux-x86_64.tar.xz | tar -xJ --strip-components=1 -C "$install_dir"
+          echo "$install_dir/bin" >> "$GITHUB_PATH"
 
       - name: Verify Futhark Installation
         run: futhark --version
@@ -51,9 +54,10 @@ jobs:
           mkdir -p _build
           for t in tests/futhark/test_*.fut; do
             echo "Testing $t..."
-            futhark c "$t" -o "_build/$(basename $t .fut)"
-            "_build/$(basename $t .fut)" </dev/null > "_build/$(basename $t .fut).out"
-            grep -q "true" "_build/$(basename $t .fut).out" || (echo "FAIL: $t" && exit 1)
+            binary="_build/$(basename "$t" .fut)"
+            futhark c "$t" -o "$binary"
+            "$binary" </dev/null > "$binary.out"
+            grep -q "true" "$binary.out" || (echo "FAIL: $t" && exit 1)
           done
 
   c-native:

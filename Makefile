@@ -2,7 +2,8 @@
 # Production Makefile with full verification and test targets.
 
 CC ?= clang
-CFLAGS ?= -O3 -Wall -Wextra -Werror -std=c99 -Isrc/c -lm
+CFLAGS ?= -O3 -Wall -Wextra -Werror -std=c99 -Isrc/c
+LDLIBS ?= -lm
 FUTHARK ?= futhark
 PYTHON ?= python3
 
@@ -45,8 +46,8 @@ $(BUILD_DIR):
 
 build: $(BUILD_DIR)
 	@echo "==> Compiling native C library and CLI executable..."
-	$(CC) $(CFLAGS) $(SHLIB_FLAGS) -fPIC src/c/caliper_io.c src/c/caliper_bridge.c -o $(LIB_DIR)/libcaliper.$(SHLIB_EXT)
-	$(CC) $(CFLAGS) src/c/caliper_io.c src/c/caliper_bridge.c src/c/caliper_main.c -o $(BIN_DIR)/caliper-cli
+	$(CC) $(CFLAGS) $(SHLIB_FLAGS) -fPIC src/c/caliper_io.c src/c/caliper_bridge.c -o $(LIB_DIR)/libcaliper.$(SHLIB_EXT) $(LDLIBS)
+	$(CC) $(CFLAGS) src/c/caliper_io.c src/c/caliper_bridge.c src/c/caliper_main.c -o $(BIN_DIR)/caliper-cli $(LDLIBS)
 	@echo "==> Build successful: $(BIN_DIR)/caliper-cli, $(LIB_DIR)/libcaliper.$(SHLIB_EXT)"
 
 futhark-check:
@@ -70,9 +71,9 @@ test-futhark: $(BUILD_DIR)
 
 test-c: $(BUILD_DIR)
 	@echo "==> Running C unit tests..."
-	$(CC) $(CFLAGS) src/c/caliper_io.c tests/c/test_c_io.c -o $(BUILD_DIR)/test_c_io
+	$(CC) $(CFLAGS) src/c/caliper_io.c tests/c/test_c_io.c -o $(BUILD_DIR)/test_c_io $(LDLIBS)
 	$(BUILD_DIR)/test_c_io
-	$(CC) $(CFLAGS) src/c/caliper_io.c src/c/caliper_bridge.c tests/c/test_c_bridge.c -o $(BUILD_DIR)/test_c_bridge
+	$(CC) $(CFLAGS) src/c/caliper_io.c src/c/caliper_bridge.c tests/c/test_c_bridge.c -o $(BUILD_DIR)/test_c_bridge $(LDLIBS)
 	$(BUILD_DIR)/test_c_bridge
 	@echo "==> All C unit tests PASSED."
 
