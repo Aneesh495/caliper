@@ -36,7 +36,7 @@ jobs:
           sudo apt-get install -y curl tar
           install_dir="$RUNNER_TEMP/caliper-futhark"
           mkdir -p "$install_dir"
-          curl -fSL https://futhark-lang.org/releases/futhark-0.25.15-linux-x86_64.tar.xz | tar -xJ --strip-components=1 -C "$install_dir"
+          curl -fSL https://futhark-lang.org/releases/futhark-0.28.2-linux-x86_64.tar.xz | tar -xJ --strip-components=1 -C "$install_dir"
           echo "$install_dir/bin" >> "$GITHUB_PATH"
 
       - name: Verify Futhark Installation
