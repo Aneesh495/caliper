@@ -284,9 +284,12 @@ bool caliper_write_ply_ascii(const char *filepath, const CaliperPointCloud *pc) 
             int r_int = (int)(pc->r[i] * 255.0);
             int g_int = (int)(pc->g[i] * 255.0);
             int b_int = (int)(pc->b[i] * 255.0);
-            if (r_int < 0) r_int = 0; if (r_int > 255) r_int = 255;
-            if (g_int < 0) g_int = 0; if (g_int > 255) g_int = 255;
-            if (b_int < 0) b_int = 0; if (b_int > 255) b_int = 255;
+            if (r_int < 0) r_int = 0;
+            if (r_int > 255) r_int = 255;
+            if (g_int < 0) g_int = 0;
+            if (g_int > 255) g_int = 255;
+            if (b_int < 0) b_int = 0;
+            if (b_int > 255) b_int = 255;
             fprintf(f, " %d %d %d", r_int, g_int, b_int);
         }
         fprintf(f, "\n");
